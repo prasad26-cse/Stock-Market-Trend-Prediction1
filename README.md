@@ -1,4 +1,4 @@
-# Next-5-Candles Trend Prediction
+# Stock Market Trend Prediction
 
 This repository contains a complete end-to-end pipeline for predicting the trend of the next 5 candlesticks in stock market data using **TensorFlow/Keras**. The model uses historical OHLCV data along with technical indicators to classify short-term trends.
 
