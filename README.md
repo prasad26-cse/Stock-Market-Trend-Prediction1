@@ -1,122 +1,154 @@
-# Stock Market Trend Prediction
+# Stock Market Trend Prediction (Next 5-Candles Trend)
 
-This repository contains a complete end-to-end pipeline for predicting the trend of the next 5 candlesticks in stock market data using **TensorFlow/Keras**. The model uses historical OHLCV data along with technical indicators to classify short-term trends.
+This project predicts the trend of the next 5 candles (Uptrend, Downtrend, Neutral) in stock market data using an LSTM (Long Short-Term Memory) model.
+
+---
 
 ## Table of Contents
 
-* [Dependencies](#dependencies)
-* [Dataset](#dataset)
-* [Usage](#usage)
-* [Assumptions](#assumptions)
-* [Techniques](#techniques)
-* [Insights & Challenges](#insights--challenges)
-* [Suggestions for Improvement](#suggestions-for-improvement)
+1. [Overview](#overview)
+2. [Dependencies](#dependencies)
+3. [Dataset](#dataset)
+4. [How to Run](#how-to-run)
+5. [Assumptions](#assumptions)
+6. [Non-Standard Techniques](#non-standard-techniques)
+7. [Insights and Challenges](#insights-and-challenges)
+8. [Suggestions for Improvement](#suggestions-for-improvement)
+
+---
+
+## Overview
+
+The model takes historical stock data (OHLC, volume, and technical indicators) and predicts the trend for the next 5 candles:
+
+* **0**: Uptrend
+* **1**: Downtrend
+* **2**: Neutral
+
+The project uses an LSTM model to capture sequential dependencies in time-series data.
 
 ---
 
 ## Dependencies
 
-Ensure you have the following Python packages installed. Recommended Python version: **3.10+**
+Make sure you have the following Python packages installed:
 
 ```bash
 pip install pandas numpy scikit-learn matplotlib seaborn tensorflow
 ```
 
-Optional for Jupyter Notebook:
+Optional for Google Colab:
 
-```bash
-pip install notebook jupyterlab
+```python
+from google.colab import drive
 ```
 
 ---
 
 ## Dataset
 
-* The dataset should be a CSV file containing at least the following columns:
-  `Date Time`, `Open`, `High`, `Low`, `Close`, `Volume`
-* Additional columns for indicators like RSI, EMA, MACD can be included.
-* **Upload the dataset** in the same directory as the notebook/script or adjust the file path accordingly.
+* CSV file containing stock market data with columns like `Open`, `High`, `Low`, `Close`, `Volume`, and various technical indicators (SMA, EMA, RSI, MACD, Bollinger Bands, Alligator indicators, ATR, WMA).
+* Ensure the CSV file is accessible from your system or Google Drive.
 
 ---
 
-## Usage
+## How to Run
 
-1. **Load the dataset**
-   The notebook/script reads the CSV file and parses the datetime column.
+1. **Mount Google Drive** (if using Colab):
 
-2. **Preprocess data**
+```python
+from google.colab import drive
+drive.mount("/content/drive")
+```
 
-   * Fill missing values if any.
-   * Scale features using standardization or MinMax scaling.
-   * Generate labels based on the trend of the next 5 candles:
+2. **Load Dataset**:
 
-     * `Up` if the closing price of the 5th candle > current close.
-     * `Down` if the closing price of the 5th candle < current close.
-     * `Neutral` if change is insignificant.
+```python
+import pandas as pd
+df = pd.read_csv('/content/drive/MyDrive/Assignment/large_32 (2).csv')
+```
 
-3. **Split data**
+3. **Preprocess Dataset**:
 
-   * Training (70%)
-   * Validation (15%)
-   * Test (15%)
+   * Convert `Date Time` to datetime object
+   * Sort data chronologically
+   * Fill missing values (`ffill`)
 
-4. **Model Training**
+4. **Generate Labels** using the next 5-candle trend.
 
-   * Define a neural network with dense layers (or LSTM/CNN for sequence modeling).
-   * Compile with `categorical_crossentropy` loss and an optimizer like `Adam`.
-   * Fit model with training data and validate on the validation set.
+5. **Select Features and Scale** using `StandardScaler`.
 
-5. **Evaluation**
+6. **Create Sequences** for LSTM with a default `time_steps = 20`.
 
-   * Evaluate model accuracy on the test set.
-   * Generate classification reports and confusion matrix for insights.
+7. **Train-Test Split** (80%-20%).
 
-6. **Prediction**
+8. **Build and Train LSTM Model**:
 
-   * Load new OHLCV data to generate next-5-candle trend predictions.
+```python
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+```
+
+* Use `EarlyStopping` to avoid overfitting.
+
+9. **Evaluate Model**:
+
+   * Classification report
+   * Confusion matrix
+   * Plot training history (loss and accuracy)
+
+10. **Predict New Data**:
+
+* Use the last `time_steps` of data to predict the trend for the next 5 candles.
 
 ---
 
 ## Assumptions
 
-* Only sequences with **at least 5 future candles** are labeled. Remaining trailing rows are ignored.
-* Missing or NaN values are handled with **forward fill**.
-* All features are numeric; categorical features (if any) are encoded before training.
-* Trend thresholds for `Neutral` classification are configurable (default ±0.2%).
+* Labels are generated based on **all 5 future candles being bullish or bearish**.
+* If fewer than 5 candles are available at the end, the trend is assumed **Neutral**.
+* Dataset is assumed **chronologically ordered**.
+* The model assumes **numeric features only**; non-numeric columns are excluded.
 
 ---
 
-## Techniques Used
+## Non-Standard Techniques
 
-* **Data Augmentation for Time Series**: Sliding window approach to generate sequences.
-* **Custom Labeling**: Next-5-candle trend classification.
-* **Standardization**: Scaling features for neural network stability.
-* Optional: Use of **custom loss functions** or **sequence models** (LSTM/GRU) to improve trend prediction.
+* **Custom Label Generation** for next 5-candle trends.
+* **Sequential LSTM input**: sequences of 20 time-steps for better trend prediction.
+* **EarlyStopping** callback to restore best model weights automatically.
+* No data augmentation is applied (can be considered in future work).
 
 ---
 
-## Insights & Challenges
+## Insights and Challenges
 
-* Stock data is noisy; minor price fluctuations can make `Neutral` trends dominant.
-* Training deep learning models on small datasets can overfit; adding regularization and dropout helps.
-* Feature engineering (technical indicators) significantly improves performance.
+* The dataset is **highly imbalanced**, with most sequences labeled as Neutral.
+* The model struggles to predict Uptrend or Downtrend due to this imbalance.
+* Sequential LSTM captures temporal dependencies better than standard classifiers.
 
 ---
 
 ## Suggestions for Improvement
 
-* Explore sequence models (LSTM, GRU, Transformer) for capturing temporal dependencies.
-* Apply feature selection to reduce irrelevant indicators.
-* Use rolling window normalization for better handling of non-stationary data.
-* Incorporate market sentiment or news data for multi-modal learning.
+1. **Data Balancing**:
+
+   * Oversample minority classes (Uptrend, Downtrend) using SMOTE or custom techniques.
+
+2. **Feature Engineering**:
+
+   * Add more derived technical indicators or volatility features.
+
+3. **Model Enhancement**:
+
+   * Experiment with Bidirectional LSTM or attention mechanisms.
+   * Hyperparameter tuning for LSTM layers, dropout, and batch size.
+
+4. **Prediction Horizon**:
+
+   * Try predicting for fewer or more than 5 candles to see the effect on accuracy.
 
 ---
 
-## Execution Order
-
-1. Upload dataset to working directory.
-2. Run preprocessing notebook/script.
-3. Train the model.
-4. Evaluate on test data.
-5. Run prediction module on new data.
-
+**Author:** Prasad Kabade
+**Date:** 2025-10-16
